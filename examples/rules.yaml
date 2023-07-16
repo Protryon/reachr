@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reachr
+  namespace: reachr
+spec:
+  groups:
+  - name: reachability
+    interval: 15s
+    rules:
+    - alert: Unreachable
+      labels:
+        pushover: "1"
+      # alerts if any checks fail
+      expr: sum by (source, host, mode) (reachr_reachability) == 0
+      annotations:
+        summary: "Unreachable: {{ $labels.source }} -> {{ $labels.host }} [{{ $labels.mode }}]"
+        description: "Unreachable: {{ $labels.source }} -> {{ $labels.host }} [{{ $labels.mode }}]"

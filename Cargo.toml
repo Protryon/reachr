@@ -1,0 +1,29 @@
+[package]
+name = "reachr"
+version = "1.0.0"
+edition = "2021"
+authors = ["Protryon <max.bruce12@gmail.com>"]
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/Protryon/reachr"
+description = "A simple tool to check service health across various protocols"
+keywords = [ "dns", "http", "ping", "health", "tcp" ]
+
+[dependencies]
+tokio = { version = "1.27", features = ["full"] }
+env_logger = "0.10.0"
+prometheus = "0.13.3"
+prometheus_exporter = "0.8"
+lazy_static = "1.4"
+url = { version = "2.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+log = "0.4"
+anyhow = "1.0"
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls"] }
+really-notify = "0.1"
+always_cell = "0.1"
+tokio-util = "0.7"
+surge-ping = "0.8.0"
+rand = "0.8"
+adns-client = "0.1"
+adns-proto = "0.1"

@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: reachr
+  namespace: reachr
+  labels:
+    app: reachr
+spec:
+  ports:
+  - port: 9061
+    name: prom
+  selector:
+    app: reachr
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reachr
+  namespace: reachr
+  labels:
+    app: reachr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reachr
+  template:
+    metadata:
+      labels:
+        app: reachr
+    spec:
+      containers:
+      - name: reachr
+        image: protryon/reachr:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9061
+          protocol: TCP
+          name: prom
+        env:
+        - name: REACHR_CONF
+          value: "/config/config.yaml"
+        volumeMounts:
+          - name: reachr
+            mountPath: /config
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+      volumes:
+      - name: reachr
+        configMap:
+          name: reachr
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reachr
+  namespace: reachr
+  labels:
+    app: reachr
+data:
+  config.yaml: |
+    # to export prometheus metrics
+    bind: 0.0.0.0:9061
+    name: origination.host.name
+    # seconds
+    interval: 15
+    # seconds, should be < interval
+    timeout: 10
+    targets:
+    - mode: ping
+      host: pingcheck.host.name
+    - mode: tcp
+      host: tcpcheck.host.name
+    - mode: https
+      host: host.name
+      status: 302
+    - mode: https
+      host: host.name
+      # no status field implies any status code is okay
+    - mode: http
+      host: host.name
+      # checks that a DNS request resolves
+    - mode: dns
+      host: ns1.host.name
+      dns_name: host.name
+    # see src/config.rs for more details
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reachr
+  namespace: reachr
+  labels:
+    app: reachr
+spec:
+  selector:
+    matchLabels:
+      app: reachr
+  endpoints:
+  - port: prom
+    interval: 15s

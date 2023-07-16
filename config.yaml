@@ -1,0 +1,13 @@
+bind: 0.0.0.0:9061
+name: local
+interval: 10
+timeout: 2
+targets:
+- mode: ping
+  host: 8.8.8.8
+- mode: dns
+  host: 8.8.8.8
+  dns_name: google.com
+- mode: https
+  host: google.com
+  status: 200
