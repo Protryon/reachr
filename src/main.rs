@@ -61,6 +61,7 @@ async fn main() {
                     loop {
                         select! {
                             _ = guard.cancelled() => {
+                                target2.remove();
                                 break;
                             },
                             _ = interval.tick() => {

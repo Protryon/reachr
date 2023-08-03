@@ -25,6 +25,16 @@ lazy_static::lazy_static! {
 }
 
 impl Target {
+    pub fn remove(&self) {
+        let config = CONFIG.borrow();
+        REACHABILITY
+            .remove_label_values(&[&config.name, &self.host, &self.mode.name()])
+            .ok();
+        LATENCY
+            .remove_label_values(&[&CONFIG.borrow().name, &self.host, &self.mode.name()])
+            .ok();
+    }
+
     pub async fn test(&self) {
         let result = match self.mode {
             Mode::Ping => self.test_ping().await,
