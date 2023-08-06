@@ -21,6 +21,7 @@ lazy_static::lazy_static! {
     static ref REACHABILITY: IntGaugeVec = register_int_gauge_vec!("reachr_reachability", "reachr_reachability", &["source", "host", "mode"]).unwrap();
 
     static ref PING_CLIENT: surge_ping::Client = surge_ping::Client::new(&surge_ping::Config::default()).unwrap();
+    static ref PINGV6_CLIENT: surge_ping::Client = surge_ping::Client::new(&surge_ping::Config { kind: surge_ping::ICMP::V6, ..Default::default() }).unwrap();
     static ref HTTP_CLIENT: reqwest::Client = reqwest::ClientBuilder::default().redirect(Policy::none()).build().unwrap();
 }
 
@@ -79,7 +80,12 @@ impl Target {
         };
         let timeout = Duration::from_secs(CONFIG.borrow().timeout);
         let id: u16 = thread_rng().gen();
-        let (_, latency) = PING_CLIENT
+        let client = if ip.is_ipv4() {
+            &*PING_CLIENT
+        } else {
+            &*PINGV6_CLIENT
+        };
+        let (_, latency) = client
             .pinger(ip.ip(), PingIdentifier(id))
             .await
             .timeout(timeout)
