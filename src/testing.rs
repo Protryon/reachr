@@ -1,11 +1,11 @@
 use std::{
-    net::SocketAddr,
+    net::{IpAddr, SocketAddr},
     str::FromStr,
     time::{Duration, Instant},
 };
 
 use adns_client::DnsClient;
-use adns_proto::{Question, Type};
+use adns_proto::{Question, Type, TypeData};
 use anyhow::{bail, Context, Result};
 use log::warn;
 use prometheus::{register_histogram_vec, register_int_gauge_vec, HistogramVec, IntGaugeVec};
@@ -67,11 +67,31 @@ impl Target {
     }
 
     async fn get_ip(&self) -> Result<Option<SocketAddr>> {
-        Ok(
-            tokio::net::lookup_host((&*self.host, self.port.unwrap_or(self.mode.port())))
-                .await?
-                .next(),
+        let port = self.port.unwrap_or(self.mode.port());
+        if let Some(raw_ip) = self.host.parse::<IpAddr>().ok() {
+            return Ok(Some(SocketAddr::new(raw_ip, port)));
+        }
+        let mut client = DnsClient::new().await?;
+        let timeout = Duration::from_secs(CONFIG.borrow().timeout);
+        let packet = tokio::time::timeout(
+            timeout,
+            client.query(
+                SocketAddr::new(self.dns_address, 53),
+                vec![Question {
+                    name: self.host.parse()?,
+                    type_: Type::A,
+                    class: adns_proto::Class::IN,
+                }],
+            ),
         )
+        .await??;
+        if packet.answers.is_empty() {
+            bail!("couldn't lookup host field @ {}", self.dns_address);
+        }
+        let TypeData::A(addr) = packet.answers.first().unwrap().data else {
+            bail!("unexpected answer data from {}", self.dns_address);
+        };
+        return Ok(Some(SocketAddr::new(IpAddr::V4(addr), port)));
     }
 
     async fn test_ping(&self) -> Result<()> {

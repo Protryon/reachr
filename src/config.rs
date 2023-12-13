@@ -1,4 +1,7 @@
-use std::{collections::HashSet, net::SocketAddr};
+use std::{
+    collections::HashSet,
+    net::{IpAddr, SocketAddr},
+};
 
 use always_cell::AlwaysCell;
 use serde::{Deserialize, Serialize};
@@ -26,6 +29,13 @@ pub struct Target {
     pub r#type: Option<String>,
     pub dns_name: Option<String>,
     pub interval: Option<u64>,
+    /// for DNS lookup of `host`
+    #[serde(default = "default_dns")]
+    pub dns_address: IpAddr,
+}
+
+fn default_dns() -> IpAddr {
+    "8.8.8.8".parse().unwrap()
 }
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, Copy)]
